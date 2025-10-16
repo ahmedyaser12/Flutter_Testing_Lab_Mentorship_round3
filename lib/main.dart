@@ -5,6 +5,7 @@ void main() {
   runApp(const FlutterTestingLabApp());
 }
 
+// fake push
 class FlutterTestingLabApp extends StatelessWidget {
   const FlutterTestingLabApp({super.key});
 
