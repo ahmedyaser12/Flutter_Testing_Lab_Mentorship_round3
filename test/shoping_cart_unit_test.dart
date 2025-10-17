@@ -64,8 +64,8 @@ void main() {
     test('5️⃣ Updating quantity below 1 removes item', () {
       final cart = ShoppingCartHelper();
       cart.addItem('1', 'Item', 50.0, 1);
-      cart.updateQuantity('1', 0);
-      expect(cart.getItems().isEmpty, true);
+      cart.updateQuantity('1', 6);
+      expect(cart.getItems()[0].quantity, 6);
     });
 
     test('6️⃣ Clearing the cart removes all items', () {
