@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../helper/weather_helper.dart';
+import '../weather_service/weather_service.dart';
+
 class WeatherDisplay extends StatefulWidget {
   const WeatherDisplay({super.key});
 
@@ -17,37 +20,14 @@ class _WeatherDisplayState extends State<WeatherDisplay> {
   final List<String> _cities = ['New York', 'London', 'Tokyo', 'Invalid City'];
 
   double celsiusToFahrenheit(double celsius) {
-    return celsius * 9 / 5;
+    return WeatherHelper().celsiusToFahrenheit(celsius);
   }
 
   double fahrenheitToCelsius(double fahrenheit) {
-    return fahrenheit - 32 * 5 / 9;
+    return WeatherHelper().fahrenheitToCelsius(fahrenheit);
   }
 
-  // Simulate API call that sometimes returns null or malformed data
-  Future<Map<String, dynamic>?> _fetchWeatherData(String city) async {
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (city == 'Invalid City') {
-      return null;
-    }
-
-    
-    if (DateTime.now().millisecond % 4 == 0) {
-      return {'city': city, 'temperature': 22.5}; 
-    }
-
-    return {
-      'city': city,
-      'temperature': city == 'London' ? 15.0 : (city == 'Tokyo' ? 25.0 : 22.5),
-      'description': city == 'London'
-          ? 'Rainy'
-          : (city == 'Tokyo' ? 'Cloudy' : 'Sunny'),
-      'humidity': city == 'London' ? 85 : (city == 'Tokyo' ? 70 : 65),
-      'windSpeed': city == 'London' ? 8.5 : (city == 'Tokyo' ? 5.2 : 12.3),
-      'icon': city == 'London' ? '🌧️' : (city == 'Tokyo' ? '☁️' : '☀️'),
-    };
-  }
+  final WeatherService _weatherService = WeatherService();
 
   Future<void> _loadWeather() async {
     if (mounted) {
@@ -56,13 +36,22 @@ class _WeatherDisplayState extends State<WeatherDisplay> {
         _error = null;
       });
     }
-
-    
-    final data = await _fetchWeatherData(_selectedCity);
-    setState(() {
-      _weatherData = WeatherData.fromJson(data); 
-      _isLoading = false;
-    });
+    try {
+      final data = await _weatherService.fetchWeatherData(_selectedCity);
+      //for clearly error if data is null
+      if (data == null) {
+        throw Exception('No data returned for $_selectedCity');
+      }
+      setState(() {
+        _weatherData = WeatherData.fromJson(data);
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to fetch weather data: $e';
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -129,7 +118,16 @@ class _WeatherDisplayState extends State<WeatherDisplay> {
 
           if (_isLoading && _error == null)
             const Center(child: CircularProgressIndicator())
-          
+          else if (_error != null)
+            Center(
+              child: Text(
+                _error!,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            )
           else if (_weatherData != null)
             Card(
               elevation: 4,
@@ -199,8 +197,7 @@ class _WeatherDisplayState extends State<WeatherDisplay> {
                   ],
                 ),
               ),
-            )
-          
+            ),
         ],
       ),
     );
@@ -238,15 +235,24 @@ class WeatherData {
     required this.icon,
   });
 
-  
   factory WeatherData.fromJson(Map<String, dynamic>? json) {
+    if (json == null ||
+        json['city'] == null ||
+        json['temperature'] == null ||
+        json['description'] == null ||
+        json['humidity'] == null ||
+        json['windSpeed'] == null ||
+        json['icon'] == null) {
+      throw Exception('Incomplete weather data');
+    }
+
     return WeatherData(
-      city: json!['city'],
+      city: json['city'],
       temperatureCelsius: json['temperature'].toDouble(),
       description: json['description'],
-      humidity: json['humidity'], 
-      windSpeed: json['windSpeed'].toDouble(), 
-      icon: json['icon'], 
+      humidity: json['humidity'],
+      windSpeed: json['windSpeed'].toDouble(),
+      icon: json['icon'],
     );
   }
 }
