@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../helper/registration_controller.dart';
+
 class UserRegistrationForm extends StatefulWidget {
   const UserRegistrationForm({super.key});
 
@@ -18,14 +20,19 @@ class _UserRegistrationFormState extends State<UserRegistrationForm> {
   String _message = '';
 
   bool isValidEmail(String email) {
-    return email.contains('@');
+    return RegistrationController.isValidEmail(email);
   }
 
   bool isValidPassword(String password) {
-    return true;
+    return RegistrationController.isValidPassword(password);
   }
 
   Future<void> _submitForm() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    // Simulate registration
     setState(() {
       _isLoading = true;
       _message = '';
